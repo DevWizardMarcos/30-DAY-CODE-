@@ -1,17 +1,22 @@
-from sqlalchemy.orm import Mapped, mapped_column, declarative_base
+#column degina coluna do banco de dados 
+#Integer tipo de dados INT 
+#String tipo de dados VARCHAR
+#Float tipo de dados FLOAT
+#ForeignKey cria relacionamento entre tabelas
 
-# Cria a base para os modelos do banco de dados
-Base = declarative_base()
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy.orm import relationship 
+from .database import Base 
 
-# Modelo Produto para o banco de dados
+
 class Produto(Base):
 	__tablename__ = "produtos"  # Nome da tabela no banco
 
-	id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+	id = Column(Integer, primary_key=True, autoincrement=True)
 	# id: chave primária, autoincrementa automaticamente
-	nome: Mapped[str] = mapped_column()
+	nome = Column(String)
 	# nome: coluna do tipo string
-	preco: Mapped[float] = mapped_column()
+	preco = Column(Float)
 	# preco: coluna do tipo float
 
 # Para criar a tabela no banco, use:

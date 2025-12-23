@@ -1,13 +1,17 @@
-
 from pydantic import BaseModel #usando pydantic para validar dados 
 #BaseModel seria para definir a forma dos dados
+from typing import Optional
 
-class Produto(BaseModel):
+class ProdutoBase(BaseModel):
     nome: str
     preco: float
 
-#Um schema é uma classe que define como os dados devem ser enviados ou recebidos.
+class ProdutoCreate(ProdutoBase):
+    user_id: int
 
-class ProdutoUpdate(BaseModel):
-    nome: str = None
-    preco: float = None
+class ProdutoOut(ProdutoBase):
+    id: int
+    user_id: int
+
+    class Config:
+        orm_mode = True

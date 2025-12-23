@@ -1,4 +1,15 @@
 from fastapi import FastAPI
+from app.produto_router import router as produto_router
+from app import models, produto_model
+from app.database import engine, Base
+
+app = FastAPI()
+app.include_router(produto_router)
+
+@app.on_event("startup")
+def startup():
+    Base.metadata.create_all(bind=engine)
+
 from pydantic import BaseModel #usando pydantic para validar dados 
 #BaseModel seria para definir a forma dos dados
 
@@ -12,9 +23,6 @@ class Produto(BaseModel):
 class ProdutoUpdate(BaseModel):
     nome: str = None
     preco: float = None
-
-#instancia que seia o servidor web
-app = FastAPI()
 
 # rota para mostrar uma mensagem 
 @app.get('/health')
