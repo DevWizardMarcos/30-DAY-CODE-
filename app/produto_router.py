@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.produto_schema import ProdutoCreate, ProdutoOut
 from app.database import SessionLocal
 from app import models
+from typing import Optional
 
 router = APIRouter()
 
@@ -41,13 +42,42 @@ def criar_produto(produto: ProdutoCreate, db: Session = Depends(get_db)):
 def buscar_produto(produtoid: int):
     return {"mensagem": f"Você buscou o produto com id {produtoid}"}
 
-#São valores que você coloca depois do ? na URL para filtrar ou modificar a busca.
-
+# Rota para listar produtos com paginação e filtros
+# GET porque só vai mostrar os dados
 @router.get("/produtos", response_model=list[ProdutoOut])
-def listar_produtos(categoria: str = None, limite: int = 10, db: Session = Depends(get_db)):
-    return {
-        "mensagem": f"Listando produtos da categoria {categoria} (limite {limite})"
-    }
+def listar_produtos(
+    limit: int = Query(10, ge=1, le=100),  # quantos produtos trazer (padrão 10)
+    offset: int = Query(0, ge=0),  # quantos pular (padrão 0)
+    nome: Optional[str] = None,  # filtrar por nome (opcional)
+    preco_min: Optional[float] = None,  # preço mínimo (opcional)
+    preco_max: Optional[float] = None,  # preço máximo (opcional)
+    user_id: Optional[int] = None,  # filtrar por usuário (opcional)
+    db: Session = Depends(get_db)
+):
+    # passo 1: começar pegando todos os produtos
+    query = db.query(models.Produto)
+    
+    # passo 2: adicionar filtros se foram passados
+    if nome:
+        # ilike busca parcial sem diferenciar maiúscula/minúscula
+        query = query.filter(models.Produto.nome.ilike(f"%{nome}%"))
+    
+    if preco_min is not None:
+        # pega só produtos com preço maior ou igual ao mínimo
+        query = query.filter(models.Produto.preco >= preco_min)
+    
+    if preco_max is not None:
+        # pega só produtos com preço menor ou igual ao máximo
+        query = query.filter(models.Produto.preco <= preco_max)
+    
+    if user_id is not None:
+        # pega só produtos desse usuário
+        query = query.filter(models.Produto.user_id == user_id)
+    
+    # passo 3: aplicar paginação (sempre no final)
+    produtos = query.offset(offset).limit(limit).all()
+    
+    return produtos
 
 
 @router.get('/produtos/usuario/{usuario_id}', response_model=list[ProdutoOut])

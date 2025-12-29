@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.usuario_schema import UsuarioCreate, UsuarioOut, UsuarioComProdutos
 from app.usuario_service import UsuarioService
 from app.database import SessionLocal
+from typing import Optional
 
 
 router = APIRouter(prefix="/usuario", tags=["usuários"])
@@ -48,20 +49,35 @@ def buscar_usuario(usuario_id: int, db: Session = Depends(get_db)):
     return db_usuario
 
 
-# LISTAR TODOS OS USUÁRIOS
+# Rota para listar usuários com paginação e filtros
+# GET porque só vai mostrar os dados
 @router.get("/", response_model=list[UsuarioOut])
 def listar_usuarios(
-    limite: int = 10,
-    offset: int = 0,
+    limite: int = Query(10, ge=1, le=100),  # quantos usuários trazer (padrão 10)
+    offset: int = Query(0, ge=0),  # quantos pular (padrão 0)
+    nome: Optional[str] = None,  # filtrar por nome (opcional)
+    email: Optional[str] = None,  # filtrar por email (opcional)
     db: Session = Depends(get_db)
 ):
-    """
-    Lista todos os usuários com paginação
-    Query params:
-    - limite: quantos registros retorna (padrão 10)
-    - offset: por onde começa (padrão 0)
-    """
-    return UsuarioService.listar_usuarios(db, limite, offset)
+    # importar o modelo pra fazer a query
+    from app import models
+    
+    # passo 1: começar pegando todos os usuários
+    query = db.query(models.User)
+    
+    # passo 2: adicionar filtros se foram passados
+    if nome:
+        # ilike busca parcial sem diferenciar maiúscula/minúscula
+        query = query.filter(models.User.name.ilike(f"%{nome}%"))
+    
+    if email:
+        # busca parcial no email
+        query = query.filter(models.User.email.ilike(f"%{email}%"))
+    
+    # passo 3: aplicar paginação (sempre no final)
+    usuarios = query.offset(offset).limit(limite).all()
+    
+    return usuarios
 
 
 # LISTAR USUÁRIOS COM PRODUTOS
