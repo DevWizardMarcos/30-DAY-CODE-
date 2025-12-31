@@ -3,10 +3,13 @@ from app.produto_router import router as produto_router
 from app.usuario_router import router as usuario_router
 from app import models, produto_model
 from app.database import engine, Base
+from app.error_handler import registrar_handlers_erro  # Dia 10: tratamento de erros
 
 app = FastAPI()
 app.include_router(usuario_router)  # rota de usuários
 app.include_router(produto_router)  # rota de produtos
+
+registrar_handlers_erro(app)
 
 @app.on_event("startup")
 def startup():
